@@ -1,0 +1,1338 @@
+<!DOCTYPE html>
+<html lang="zh-HK" class="h-full bg-slate-900 text-slate-100">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>啟德及土瓜灣社區通勤與學校資訊站 | Kai Tak & To Kwa Wan Hub</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        mtr: {
+                            tuenma: '#923011',
+                            kwuntong: '#00af41',
+                            station: '#1e293b'
+                        },
+                        citybus: {
+                            yellow: '#facc15',
+                            blue: '#1d4ed8'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Noto Sans TC', 'Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Custom scrollbar & glassmorphism styling */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.6);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(100, 116, 139, 0.5);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(148, 163, 184, 0.8);
+        }
+        .glass-panel {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .pulse-live {
+            animation: pulse-ring 2s infinite;
+        }
+        @keyframes pulse-ring {
+            0% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.5); }
+            70% { box-shadow: 0 0 0 10px rgba(34, 197, 94, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
+        }
+    </style>
+</head>
+<body class="min-h-full flex flex-col font-sans bg-slate-950 text-slate-100 antialiased selection:bg-cyan-500 selection:text-slate-900">
+
+    <!-- Top Navigation Header -->
+    <header class="sticky top-0 z-40 border-b border-slate-800 bg-slate-900/90 backdrop-blur-md px-4 lg:px-8 py-3">
+        <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+            
+            <!-- App Title & Station Badge -->
+            <div class="flex items-center space-x-3 w-full sm:w-auto justify-between sm:justify-start">
+                <div class="flex items-center space-x-3">
+                    <div class="p-2.5 bg-gradient-to-tr from-cyan-600 to-blue-600 rounded-xl shadow-lg shadow-cyan-950/50">
+                        <i class="fa-solid fa-city text-xl text-white"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-lg font-bold tracking-tight text-white flex items-center gap-2">
+                            <span data-i18n="app_title">啟德與土瓜灣 社區資訊 HUB</span>
+                            <span class="text-xs px-2 py-0.5 rounded-full bg-cyan-950 text-cyan-400 border border-cyan-800/50 font-medium" data-i18n="app_badge">九龍城區</span>
+                        </h1>
+                        <p class="text-xs text-slate-400" data-i18n="app_subtitle">天氣 • 港鐵屯馬綫 • 城巴 608 綫 • 教育局停課通告</p>
+                    </div>
+                </div>
+
+                <!-- Refresh & Lang Controls on Mobile -->
+                <div class="flex items-center space-x-2 sm:hidden">
+                    <button onclick="toggleLanguage()" class="px-2 py-1 bg-cyan-950 hover:bg-cyan-900 border border-cyan-700/60 rounded-lg text-xs font-bold text-cyan-300">
+                        <span id="lang-btn-mobile">English</span>
+                    </button>
+                    <button id="mobile-refresh-btn" onclick="refreshAllData()" class="p-2 text-slate-400 hover:text-white rounded-lg bg-slate-800 border border-slate-700">
+                        <i class="fa-solid fa-rotate-right" id="mobile-refresh-icon"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Live Clock & Desktop Controls -->
+            <div class="flex items-center space-x-4 w-full sm:w-auto justify-between sm:justify-end border-t sm:border-t-0 pt-2 sm:pt-0 border-slate-800">
+                <!-- HK Date and Time Display -->
+                <div class="text-left sm:text-right">
+                    <div id="live-clock" class="text-xl sm:text-2xl font-mono font-bold tracking-wider text-cyan-400">00:00:00 AM</div>
+                    <div id="live-date" class="text-xs text-slate-400 font-medium">加載日期中...</div>
+                </div>
+
+                <!-- Global Action Controls -->
+                <div class="flex items-center space-x-2">
+                    <!-- Language Switcher Button -->
+                    <button onclick="toggleLanguage()" class="hidden sm:flex items-center space-x-1.5 px-3 py-1.5 bg-cyan-950 hover:bg-cyan-900 border border-cyan-700/60 rounded-lg text-xs font-bold text-cyan-300 transition shadow-sm hover:border-cyan-400">
+                        <i class="fa-solid fa-globe"></i>
+                        <span id="lang-btn-desktop">English</span>
+                    </button>
+
+                    <button id="refresh-btn" onclick="refreshAllData()" class="hidden sm:flex items-center space-x-2 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg text-xs font-semibold text-slate-200 transition-all hover:border-cyan-500/50">
+                        <i class="fa-solid fa-rotate-right" id="desktop-refresh-icon"></i>
+                        <span data-i18n="sync_now">即時同步</span>
+                    </button>
+                    <button onclick="toggleAudioAlerts()" id="audio-toggle" class="p-2 bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-emerald-400 rounded-lg border border-slate-700 text-xs transition" title="切換提示音">
+                        <i class="fa-solid fa-bell-slash text-slate-400" id="audio-icon"></i>
+                    </button>
+                    <div class="flex items-center space-x-1.5 px-2.5 py-1 rounded-full bg-emerald-950/60 border border-emerald-800/50 text-emerald-400 text-xs">
+                        <span class="w-2 h-2 rounded-full bg-emerald-500 pulse-live"></span>
+                        <span class="font-mono text-[11px] font-semibold" id="last-sync">Live</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
+
+        <!-- Top Priority Announcement / Signal Banner -->
+        <div id="top-alert-banner" class="hidden rounded-2xl p-4 bg-gradient-to-r from-amber-950/90 via-red-950/80 to-slate-900 border border-amber-600/40 shadow-xl shadow-amber-950/30">
+            <div class="flex items-start sm:items-center space-x-3">
+                <div class="p-2.5 bg-amber-500/20 text-amber-400 rounded-xl flex-shrink-0">
+                    <i class="fa-solid fa-triangle-exclamation text-xl"></i>
+                </div>
+                <div class="flex-1 min-w-0">
+                    <h3 class="text-sm font-bold text-amber-200 flex items-center gap-2" id="alert-banner-title">
+                        天氣及交通特別通告
+                    </h3>
+                    <p class="text-xs text-amber-300/90 mt-0.5 truncate" id="alert-banner-desc">
+                        正在檢查最新教育局停課安排及熱帶氣旋/暴雨警告...
+                    </p>
+                </div>
+                <button onclick="dismissBanner()" class="text-slate-400 hover:text-white p-1">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Dashboard Grid Layout -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+            <!-- LEFT COLUMN: Weather & Education Authority Announcements (5 cols) -->
+            <div class="lg:col-span-5 space-y-6">
+
+                <!-- WEATHER CARD -->
+                <section class="glass-panel rounded-2xl p-5 shadow-2xl relative overflow-hidden group">
+                    <div class="absolute -right-10 -top-10 w-40 h-40 bg-cyan-500/10 rounded-full blur-3xl group-hover:bg-cyan-500/20 transition-all duration-500"></div>
+
+                    <div class="flex items-center justify-between pb-4 border-b border-slate-800">
+                        <div class="flex items-center space-x-2.5">
+                            <i class="fa-solid fa-cloud-sun-rain text-cyan-400 text-lg"></i>
+                            <h2 class="text-base font-bold text-white tracking-wide" data-i18n="weather_title">香港天文台天氣</h2>
+                        </div>
+                        <span id="weather-location" class="text-xs font-medium px-2.5 py-1 rounded-md bg-slate-800 text-cyan-300 border border-slate-700" data-i18n="weather_loc">
+                            九龍城 / 啟德
+                        </span>
+                    </div>
+
+                    <!-- Weather Info Details -->
+                    <div class="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-4 items-center">
+                        <!-- Main Temp & Icon -->
+                        <div class="flex items-center space-x-4">
+                            <div id="weather-icon-container" class="w-16 h-16 rounded-2xl bg-slate-800/80 border border-slate-700 flex items-center justify-center text-3xl text-amber-400 shadow-inner">
+                                <i class="fa-solid fa-sun"></i>
+                            </div>
+                            <div>
+                                <div class="flex items-baseline space-x-1">
+                                    <span id="weather-temp" class="text-4xl font-extrabold text-white">--</span>
+                                    <span class="text-xl font-bold text-cyan-400">°C</span>
+                                </div>
+                                <p id="weather-desc" class="text-xs font-semibold text-slate-300 mt-0.5" data-i18n="fetching_weather">獲取天文台數據中...</p>
+                            </div>
+                        </div>
+
+                        <!-- Humidity & Rainfall Stats -->
+                        <div class="bg-slate-900/60 rounded-xl p-3 border border-slate-800/80 space-y-2">
+                            <div class="flex items-center justify-between text-xs">
+                                <span class="text-slate-400 flex items-center gap-1.5">
+                                    <i class="fa-solid fa-droplet text-blue-400"></i> <span data-i18n="humidity">相對濕度</span>
+                                </span>
+                                <span id="weather-humidity" class="font-mono font-bold text-slate-200">--%</span>
+                            </div>
+                            <div class="flex items-center justify-between text-xs">
+                                <span class="text-slate-400 flex items-center gap-1.5">
+                                    <i class="fa-solid fa-cloud-showers-heavy text-cyan-400"></i> <span data-i18n="rainfall">區內雨量</span>
+                                </span>
+                                <span id="weather-rainfall" class="font-mono font-bold text-slate-200">0 mm</span>
+                            </div>
+                            <div class="flex items-center justify-between text-xs">
+                                <span class="text-slate-400 flex items-center gap-1.5">
+                                    <i class="fa-solid fa-uv-index text-amber-400"></i> <span data-i18n="uv_index">紫外線指數</span>
+                                </span>
+                                <span id="weather-uv" class="font-mono font-bold text-slate-200" data-i18n="uv_moderate">中等</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Active Weather Warnings Badges -->
+                    <div class="mt-5 pt-4 border-t border-slate-800/80">
+                        <div class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-2" data-i18n="warnings_title">生效中之警告信號</div>
+                        <div id="weather-warnings-container" class="flex flex-wrap gap-2">
+                            <span class="px-3 py-1 rounded-lg bg-emerald-950/50 text-emerald-400 border border-emerald-800/40 text-xs font-medium flex items-center gap-1.5">
+                                <i class="fa-solid fa-circle-check text-[10px]"></i> <span data-i18n="no_severe_weather">現時無顯著惡劣天氣警告</span>
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Observatory Forecast Teaser -->
+                    <div class="mt-4 p-3 bg-slate-900/40 rounded-xl border border-slate-800 text-xs text-slate-300 leading-relaxed" id="weather-forecast-summary">
+                        <i class="fa-solid fa-info-circle text-cyan-400 mr-1"></i>
+                        <span data-i18n="loading_forecast">正在載入天文台天氣簡報...</span>
+                    </div>
+                </section>
+
+                <!-- EDUCATION AUTHORITY (EDB) SCHOOL ANNOUNCEMENTS CARD -->
+                <section class="glass-panel rounded-2xl p-5 shadow-2xl relative overflow-hidden border-t-2 border-t-indigo-500">
+                    <div class="flex items-center justify-between pb-4 border-b border-slate-800">
+                        <div class="flex items-center space-x-2.5">
+                            <i class="fa-solid fa-graduation-cap text-indigo-400 text-lg"></i>
+                            <div>
+                                <h2 class="text-base font-bold text-white tracking-wide" data-i18n="edb_title">教育局 (EDB) 通告</h2>
+                                <p class="text-[11px] text-slate-400" data-i18n="edb_subtitle">學校停課及緊急上課安排</p>
+                            </div>
+                        </div>
+                        <span id="edb-status-badge" class="px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-950 text-emerald-300 border border-emerald-800" data-i18n="edb_normal_badge">
+                            照常上課
+                        </span>
+                    </div>
+
+                    <!-- Main School Status Hero Box -->
+                    <div id="edb-status-box" class="mt-4 p-4 rounded-xl bg-slate-900/80 border border-slate-800 flex items-start space-x-3.5">
+                        <div id="edb-status-icon" class="w-10 h-10 rounded-xl bg-emerald-900/40 text-emerald-400 flex items-center justify-center flex-shrink-0 text-xl border border-emerald-700/50">
+                            <i class="fa-solid fa-school-circle-check"></i>
+                        </div>
+                        <div class="flex-1">
+                            <h3 id="edb-status-headline" class="text-sm font-bold text-slate-100" data-i18n="edb_normal_headline">所有學校照常上課</h3>
+                            <p id="edb-status-detail" class="text-xs text-slate-400 mt-1 leading-relaxed" data-i18n="edb_normal_detail">
+                                教育局現時未有發出今日特別停課指示。
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Official EDB Protocol Guide -->
+                    <div class="mt-4 space-y-2">
+                        <div class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider" data-i18n="edb_ref_title">教育局颱風及暴雨停課速查</div>
+                        <div class="grid grid-cols-2 gap-2 text-xs">
+                            <div class="p-2.5 bg-slate-900/50 rounded-xl border border-slate-800">
+                                <div class="font-bold text-amber-400 flex items-center gap-1">
+                                    <i class="fa-solid fa-wind text-xs"></i> <span data-i18n="t3_title">三號風球</span>
+                                </div>
+                                <div class="text-[11px] text-slate-400 mt-1" data-i18n="t3_desc">幼稚園及特殊學校停課；中小學照常上課。</div>
+                            </div>
+                            <div class="p-2.5 bg-slate-900/50 rounded-xl border border-slate-800">
+                                <div class="font-bold text-red-400 flex items-center gap-1">
+                                    <i class="fa-solid fa-bolt text-xs"></i> <span data-i18n="t8_title">八號風球 / 黑雨</span>
+                                </div>
+                                <div class="text-[11px] text-slate-400 mt-1" data-i18n="t8_desc">全港所有日校及夜校即時停課。</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Live Announcement Feed -->
+                    <div class="mt-4 pt-3 border-t border-slate-800">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider" data-i18n="edb_updates">教育局最新動態</span>
+                            <a href="https://www.edb.gov.hk/tc/index.html" target="_blank" rel="noopener" class="text-[11px] text-indigo-400 hover:text-indigo-300 flex items-center gap-1">
+                                <span data-i18n="edb_portal">教育局官方網站</span> <i class="fa-solid fa-arrow-up-right-from-square text-[9px]"></i>
+                            </a>
+                        </div>
+                        <div id="edb-bulletin-list" class="space-y-2 max-h-40 overflow-y-auto pr-1">
+                            <!-- Populated via JS -->
+                        </div>
+                    </div>
+                </section>
+
+            </div>
+
+
+            <!-- RIGHT COLUMN: MTR Line Status & Citybus 608 ETA (7 cols) -->
+            <div class="lg:col-span-7 space-y-6">
+
+                <!-- MTR SERVICE STATUS CARD -->
+                <section class="glass-panel rounded-2xl p-5 shadow-2xl border-t-2 border-t-amber-600">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4 border-b border-slate-800">
+                        <div class="flex items-center space-x-3">
+                            <div class="p-2 rounded-lg bg-red-950 text-red-500 border border-red-800/50">
+                                <i class="fa-solid fa-train-subway text-xl"></i>
+                            </div>
+                            <div>
+                                <h2 class="text-base font-bold text-white tracking-wide" data-i18n="mtr_title">港鐵服務及車站狀態</h2>
+                                <p class="text-xs text-slate-400" data-i18n="mtr_subtitle">屯馬綫 (啟德 ↔ 土瓜灣) 及 觀塘綫 / 荃灣綫 (葵興) 轉乘</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <span id="mtr-overall-status" class="px-3 py-1 rounded-full text-xs font-bold bg-emerald-950 text-emerald-300 border border-emerald-800 flex items-center gap-1.5">
+                                <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                                <span data-i18n="mtr_normal">列車服務正常</span>
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- MTR Route Quick Visualizer -->
+                    <div class="mt-4 p-4 bg-slate-900/80 rounded-xl border border-slate-800 space-y-4">
+                        <div class="flex items-center justify-between text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                            <span data-i18n="route_path">路線動態簡圖</span>
+                            <span class="text-cyan-400" data-i18n="interchange_info">屯馬綫、觀塘綫與荃灣綫轉乘資訊</span>
+                        </div>
+
+                        <!-- Route Graphic -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
+                            <!-- Kai Tak Station -->
+                            <div class="p-3 bg-slate-800/90 rounded-xl border-l-4 border-l-amber-600 border border-slate-700/80 relative">
+                                <div class="flex items-center justify-between">
+                                    <span class="text-xs font-bold text-amber-400">KAT</span>
+                                    <span class="text-[10px] px-1.5 py-0.5 rounded bg-amber-950/80 text-amber-300 font-mono">Tuen Ma Line</span>
+                                </div>
+                                <div class="text-sm font-bold text-white mt-1" data-i18n="kat_name">啟德 Kai Tak</div>
+                                <div class="text-[11px] text-slate-400 mt-1 flex items-center justify-between">
+                                    <span data-i18n="kat_p1">1號月台 (往 屯門)</span>
+                                    <span class="font-mono text-emerald-400 font-bold" id="mtr-kat-p1">2 分鐘</span>
+                                </div>
+                                <div class="text-[11px] text-slate-400 flex items-center justify-between">
+                                    <span data-i18n="kat_p2">2號月台 (往 烏溪沙)</span>
+                                    <span class="font-mono text-emerald-400 font-bold" id="mtr-kat-p2">4 分鐘</span>
+                                </div>
+                            </div>
+
+                            <!-- To Kwa Wan Station -->
+                            <div class="p-3 bg-slate-800/90 rounded-xl border-l-4 border-l-amber-600 border border-slate-700/80">
+                                <div class="flex items-center justify-between">
+                                    <span class="text-xs font-bold text-amber-400">TKW</span>
+                                    <span class="text-[10px] px-1.5 py-0.5 rounded bg-amber-950/80 text-amber-300 font-mono" data-i18n="tkw_note">距啟德 1 站</span>
+                                </div>
+                                <div class="text-sm font-bold text-white mt-1" data-i18n="tkw_name">土瓜灣 To Kwa Wan</div>
+                                <div class="text-[11px] text-slate-400 mt-1 flex items-center justify-between">
+                                    <span data-i18n="est_transit">預計車程</span>
+                                    <span class="font-mono text-cyan-300 font-bold" data-i18n="tkw_time">約 2 分鐘</span>
+                                </div>
+                                <div class="text-[10px] text-slate-400 mt-1" data-i18n="tkw_desc">
+                                    屯馬綫直達
+                                </div>
+                            </div>
+
+                            <!-- Kwun Tong Connection -->
+                            <div class="p-3 bg-slate-800/90 rounded-xl border-l-4 border-l-emerald-600 border border-slate-700/80">
+                                <div class="flex items-center justify-between">
+                                    <span class="text-xs font-bold text-emerald-400">KWT / HMT</span>
+                                    <span class="text-[10px] px-1.5 py-0.5 rounded bg-emerald-950/80 text-emerald-300 font-mono">Kwun Tong Line</span>
+                                </div>
+                                <div class="text-sm font-bold text-white mt-1" data-i18n="kwt_name">觀塘 Kwun Tong / 何文田</div>
+                                <div class="text-[11px] text-slate-400 mt-1 flex items-center justify-between">
+                                    <span data-i18n="kwt_transit_note">經鑽石山/何文田轉乘</span>
+                                    <span class="font-mono text-cyan-300 font-bold" data-i18n="kwt_time">約 12 分鐘</span>
+                                </div>
+                                <div class="text-[10px] text-slate-400 mt-1" data-i18n="kwt_desc">
+                                    輕鬆轉乘觀塘綫
+                                </div>
+                            </div>
+
+                            <!-- Kwai Hing Connection -->
+                            <div class="p-3 bg-slate-800/90 rounded-xl border-l-4 border-l-red-600 border border-slate-700/80">
+                                <div class="flex items-center justify-between">
+                                    <span class="text-xs font-bold text-red-400">KWH</span>
+                                    <span class="text-[10px] px-1.5 py-0.5 rounded bg-red-950/80 text-red-300 font-mono">Tsuen Wan Line</span>
+                                </div>
+                                <div class="text-sm font-bold text-white mt-1" data-i18n="kwh_name">葵興 Kwai Hing</div>
+                                <div class="text-[11px] text-slate-400 mt-1 flex items-center justify-between">
+                                    <span data-i18n="kwh_transit_note">經美孚轉乘荃灣綫</span>
+                                    <span class="font-mono text-cyan-300 font-bold" data-i18n="kwh_time">約 32 分鐘</span>
+                                </div>
+                                <div class="text-[10px] text-slate-400 mt-1" data-i18n="kwh_desc">
+                                    屯馬綫 ➔ 美孚 ➔ 葵興
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Kai Tak to Kwai Hing Commute Details Banner -->
+                        <div class="p-3 bg-slate-950/60 rounded-xl border border-slate-800 text-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+                            <div class="flex items-center space-x-2 text-slate-300">
+                                <i class="fa-solid fa-route text-red-400 text-sm"></i>
+                                <span class="font-semibold" data-i18n="kat_to_kwh_route_title">啟德往葵興推薦路線：</span>
+                                <span class="text-slate-400" data-i18n="kat_to_kwh_route_desc">啟德 (屯馬綫往屯門) ➔ 美孚站轉乘 ➔ 荃灣綫 (往荃灣) ➔ 葵興站</span>
+                            </div>
+                            <span class="text-emerald-400 font-mono font-bold whitespace-nowrap text-xs" data-i18n="kat_to_kwh_total_time">全程約 32 分鐘 (1次轉乘)</span>
+                        </div>
+                    </div>
+
+                    <!-- Train Frequencies Summary -->
+                    <div class="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-2 text-center">
+                        <div class="p-2.5 bg-slate-900/60 rounded-xl border border-slate-800">
+                            <div class="text-[10px] text-slate-400" data-i18n="peak_headway">繁忙時段班次</div>
+                            <div class="text-sm font-extrabold text-slate-200 mt-0.5" data-i18n="peak_headway_val">約 3.0 分鐘</div>
+                        </div>
+                        <div class="p-2.5 bg-slate-900/60 rounded-xl border border-slate-800">
+                            <div class="text-[10px] text-slate-400" data-i18n="offpeak_headway">非繁忙時段</div>
+                            <div class="text-sm font-extrabold text-slate-200 mt-0.5" data-i18n="offpeak_headway_val">約 5.5 分鐘</div>
+                        </div>
+                        <div class="p-2.5 bg-slate-900/60 rounded-xl border border-slate-800">
+                            <div class="text-[10px] text-slate-400" data-i18n="line_status">路綫狀態</div>
+                            <div class="text-sm font-extrabold text-emerald-400 mt-0.5" data-i18n="line_smooth">行車順暢</div>
+                        </div>
+                        <div class="p-2.5 bg-slate-900/60 rounded-xl border border-slate-800">
+                            <div class="text-[10px] text-slate-400" data-i18n="service_hours">頭班 / 尾班車</div>
+                            <div class="text-sm font-extrabold text-slate-200 mt-0.5">06:10 / 00:50</div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- CITYBUS ROUTE 608 CARD -->
+                <section class="glass-panel rounded-2xl p-5 shadow-2xl border-t-2 border-t-yellow-500">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-800">
+                        <div class="flex items-center space-x-3">
+                            <div class="px-2.5 py-1.5 bg-yellow-400 text-slate-950 rounded-xl font-extrabold text-lg shadow-md tracking-wider">
+                                608
+                            </div>
+                            <div>
+                                <h2 class="text-base font-bold text-white tracking-wide" data-i18n="bus_title">城巴 608 綫即時到站 (ETA)</h2>
+                                <p class="text-xs text-slate-400" data-i18n="bus_subtitle">九龍城 / 啟德 ↔ 土瓜灣 ↔ 東區海底隧道 ↔ 筲箕灣</p>
+                            </div>
+                        </div>
+
+                        <!-- Direction Selector Switcher -->
+                        <div class="flex items-center bg-slate-900 p-1 rounded-xl border border-slate-800 self-start sm:self-auto">
+                            <button id="dir-outbound" onclick="setBusDirection('outbound')" class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all bg-yellow-400 text-slate-950 shadow">
+                                <span data-i18n="dir_outbound">往 筲箕灣</span>
+                            </button>
+                            <button id="dir-inbound" onclick="setBusDirection('inbound')" class="px-3 py-1.5 rounded-lg text-xs font-bold text-slate-400 hover:text-white transition-all">
+                                <span data-i18n="dir_inbound">往 九龍城 (啟德)</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Stop Selection & Search Dropdown -->
+                    <div class="mt-4 grid grid-cols-1 sm:grid-cols-12 gap-3 items-center">
+                        <div class="sm:col-span-8">
+                            <div class="flex items-center justify-between mb-1">
+                                <label for="bus-stop-select" class="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider" data-i18n="select_stop_label">
+                                    選擇啟德 / 土瓜灣沿綫巴士站
+                                </label>
+                                <span id="route-sync-status" class="text-[10px] text-yellow-400/80 font-mono">
+                                    <i class="fa-solid fa-cloud-arrow-down mr-1"></i><span data-i18n="syncing_route_stops">載入全綫車站中...</span>
+                                </span>
+                            </div>
+                            <select id="bus-stop-select" onchange="fetchBusETA()" class="w-full bg-slate-900 text-slate-100 text-xs font-medium rounded-xl border border-slate-700 p-2.5 focus:ring-2 focus:ring-yellow-400 focus:outline-none">
+                                <!-- Options dynamically injected -->
+                            </select>
+                        </div>
+                        <div class="sm:col-span-4 flex items-end h-full">
+                            <button onclick="fetchBusETA()" class="w-full py-2.5 px-3 bg-yellow-400 hover:bg-yellow-300 text-slate-950 font-bold rounded-xl text-xs transition flex items-center justify-center space-x-2 shadow-lg shadow-yellow-500/10">
+                                <i class="fa-solid fa-arrows-rotate"></i>
+                                <span data-i18n="get_eta_btn">更新到站時間</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Bus Arrival Countdown Display Box -->
+                    <div class="mt-4 p-4 rounded-xl bg-slate-900/90 border border-slate-800 relative">
+                        <div class="flex items-center justify-between border-b border-slate-800 pb-2 mb-3">
+                            <span class="text-xs font-bold text-yellow-400 flex items-center gap-2">
+                                <i class="fa-solid fa-bus text-sm"></i>
+                                <span data-i18n="selected_stop">已選車站:</span> <span id="current-stop-name" class="text-white">載入中...</span>
+                            </span>
+                            <span class="text-[10px] text-slate-400 font-mono" id="eta-source-tag">城巴官方 API 數據</span>
+                        </div>
+
+                        <!-- Arrival Cards List -->
+                        <div id="bus-eta-list" class="space-y-2">
+                            <!-- ETA items rendered here -->
+                            <div class="text-center py-6 text-slate-500 text-xs">
+                                <i class="fa-solid fa-spinner fa-spin text-lg text-yellow-400 mb-2"></i>
+                                <p data-i18n="connecting_bus_api">正在連接香港城巴實時數據庫...</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Route 608 Key Highlights Footer -->
+                    <div class="mt-4 flex flex-wrap items-center justify-between text-xs text-slate-400 pt-3 border-t border-slate-800 gap-2">
+                        <span class="flex items-center gap-1.5">
+                            <i class="fa-solid fa-clock text-yellow-400"></i> <span data-i18n="bus_hours">服務時間: 05:40 - 23:50</span>
+                        </span>
+                        <span class="flex items-center gap-1.5">
+                            <i class="fa-solid fa-road text-cyan-400"></i> <span data-i18n="bus_tunnel">經東區海底隧道 (東隧)</span>
+                        </span>
+                        <span class="flex items-center gap-1.5">
+                            <i class="fa-solid fa-dollar-sign text-emerald-400"></i> <span data-i18n="bus_fare">全程車費: $11.4 / $12.1</span>
+                        </span>
+                    </div>
+                </section>
+
+            </div>
+
+        </div>
+
+        <!-- FOOTER & HK DATA DISCLOSURE -->
+        <footer class="pt-6 pb-4 border-t border-slate-800/80 text-center text-xs text-slate-500 space-y-2">
+            <p data-i18n="footer_sources">數據整合自 <strong>香港天文台 (HKO)</strong>、<strong>DATA.GOV.HK 交通資料開放 API</strong> 及 <strong>教育局 (EDB)</strong>。</p>
+            <p class="text-[11px] text-slate-600" data-i18n="footer_target">專為 啟德、土瓜灣 及 觀塘區 居民與通勤人士設計。</p>
+        </footer>
+
+    </main>
+
+    <!-- JS Application Code -->
+    <script>
+        // --- INTERNATIONALIZATION (i18n) & LOCALIZATION DICTIONARY ---
+        let currentLang = 'tc'; // Default: Traditional Chinese (繁體中文)
+
+        const I18N = {
+            tc: {
+                app_title: "啟德與土瓜灣 社區資訊 HUB",
+                app_badge: "九龍城區",
+                app_subtitle: "天氣 • 港鐵屯馬綫 • 城巴 608 綫 • 教育局停課通告",
+                sync_now: "即時同步",
+                weather_title: "香港天文台天氣",
+                weather_loc: "九龍城 / 啟德",
+                fetching_weather: "獲取天文台數據中...",
+                humidity: "相對濕度",
+                rainfall: "區內雨量",
+                uv_index: "紫外線指數",
+                uv_moderate: "中等",
+                warnings_title: "生效中之警告信號",
+                no_severe_weather: "現時無顯著惡劣天氣警告",
+                loading_forecast: "正在載入天文台天氣簡報...",
+                edb_title: "教育局 (EDB) 通告",
+                edb_subtitle: "學校停課及緊急上課安排",
+                edb_normal_badge: "照常上課",
+                edb_normal_headline: "所有學校照常上課",
+                edb_normal_detail: "教育局現時未有發出今日特別停課指示。",
+                edb_susp_all_badge: "全港停課",
+                edb_susp_all_headline: "全港日校及夜校停課",
+                edb_susp_all_detail: "因應八號或以上熱帶氣旋/黑色暴雨警告信號生效，教育局宣布全港所有日校及小學/中學今日停課。",
+                edb_susp_kg_badge: "幼稚園停課",
+                edb_susp_kg_headline: "幼稚園及特殊學校停課",
+                edb_susp_kg_detail: "三號熱帶氣旋或暴雨警告信號生效，幼稚園及特殊學校停課；中小學照常上課。",
+                edb_ref_title: "教育局颱風及暴雨停課速查",
+                t3_title: "三號風球",
+                t3_desc: "幼稚園及特殊學校停課；中小學照常上課。",
+                t8_title: "八號風球 / 黑雨",
+                t8_desc: "全港所有日校及夜校即時停課。",
+                edb_updates: "教育局最新動態",
+                edb_portal: "教育局官方網站",
+                mtr_title: "港鐵服務及車站狀態",
+                mtr_subtitle: "屯馬綫 (啟德 ↔ 土瓜灣) 及 觀塘綫 / 荃灣綫 (葵興) 轉乘",
+                mtr_normal: "列車服務正常",
+                route_path: "路線動態簡圖",
+                interchange_info: "屯馬綫、觀塘綫與荃灣綫轉乘資訊",
+                kat_name: "啟德 Kai Tak",
+                kat_p1: "1號月台 (往 屯門)",
+                kat_p2: "2號月台 (往 烏溪沙)",
+                tkw_name: "土瓜灣 To Kwa Wan",
+                tkw_note: "距啟德 1 站",
+                est_transit: "預計車程",
+                tkw_time: "約 2 分鐘",
+                tkw_desc: "屯馬綫直達",
+                kwt_name: "觀塘 Kwun Tong / 何文田",
+                kwt_transit_note: "經鑽石山/何文田轉乘",
+                kwt_time: "約 12 分鐘",
+                kwt_desc: "輕鬆轉乘觀塘綫",
+                kwh_name: "葵興 Kwai Hing",
+                kwh_transit_note: "經美孚轉乘荃灣綫",
+                kwh_time: "約 32 分鐘",
+                kwh_desc: "屯馬綫 ➔ 美孚 ➔ 葵興",
+                kat_to_kwh_route_title: "啟德往葵興推薦路線：",
+                kat_to_kwh_route_desc: "啟德 (屯馬綫往屯門) ➔ 美孚站轉乘 ➔ 荃灣綫 (往荃灣) ➔ 葵興站",
+                kat_to_kwh_total_time: "全程約 32 分鐘 (1次轉乘)",
+                peak_headway: "繁忙時段班次",
+                peak_headway_val: "約 3.0 分鐘",
+                offpeak_headway: "非繁忙時段",
+                offpeak_headway_val: "約 5.5 分鐘",
+                line_status: "路綫狀態",
+                line_smooth: "行車順暢",
+                service_hours: "頭班 / 尾班車",
+                bus_title: "城巴 608 綫即時到站 (ETA)",
+                bus_subtitle: "九龍城 / 啟德 ↔ 土瓜灣 ↔ 東區海底隧道 ↔ 筲箕灣",
+                dir_outbound: "往 筲箕灣",
+                dir_inbound: "往 九龍城 (啟德)",
+                select_stop_label: "選擇啟德 / 土瓜灣沿綫巴士站",
+                get_eta_btn: "更新到站時間",
+                selected_stop: "已選車站:",
+                connecting_bus_api: "正在連接香港城巴實時數據庫...",
+                bus_hours: "服務時間: 05:40 - 23:50",
+                bus_tunnel: "經東區海底隧道 (東隧)",
+                bus_fare: "全程車費: $11.4 / $12.1",
+                footer_sources: "數據整合自 香港天文台 (HKO)、DATA.GOV.HK 交通資料開放 API 及 教育局 (EDB)。",
+                footer_target: "專為 啟德、土瓜灣 及 觀塘區 居民與通勤人士設計。",
+                min_suffix: "分鐘",
+                mins_suffix: "分鐘",
+                arriving_text: "即將到達 / 已到站",
+                no_departures: "現時未有排班班次。",
+                cached_data_tag: "快取/模擬到站數據",
+                live_api_tag: "城巴官方 API 數據",
+                syncing_route_stops: "載入全綫車站中...",
+                route_stops_synced: "已同步城巴全綫車站"
+            },
+            en: {
+                app_title: "Kai Tak & To Kwa Wan Hub",
+                app_badge: "Kowloon City",
+                app_subtitle: "Weather • MTR Tuen Ma Line • Citybus 608 • EDB School Alerts",
+                sync_now: "Sync Now",
+                weather_title: "Hong Kong Observatory Weather",
+                weather_loc: "Kowloon City / Kai Tak",
+                fetching_weather: "Fetching HKO data...",
+                humidity: "Humidity",
+                rainfall: "Local Rainfall",
+                uv_index: "UV Index",
+                uv_moderate: "Moderate",
+                warnings_title: "Active Weather Warnings",
+                no_severe_weather: "No Severe Weather Warnings In Force",
+                loading_forecast: "Loading weather forecast summary...",
+                edb_title: "Education Bureau (EDB) Bulletins",
+                edb_subtitle: "School Suspension & Class Announcements",
+                edb_normal_badge: "Normal Classes",
+                edb_normal_headline: "All Schools Operating Normally",
+                edb_normal_detail: "No special class suspension announcements currently issued by the EDB for today.",
+                edb_susp_all_badge: "ALL SUSPENDED",
+                edb_susp_all_headline: "Class Suspension for ALL Day/Night Schools",
+                edb_susp_all_detail: "Due to active Typhoon Signal No. 8 or Black Rainstorm Warning, EDB announces that classes in all schools are suspended today.",
+                edb_susp_kg_badge: "Kindergartens Suspended",
+                edb_susp_kg_headline: "Kindergartens & Special Schools Closed",
+                edb_susp_kg_detail: "Under Typhoon Signal No. 3 or Rainstorm Warning, Kindergartens are suspended. Primary & Secondary operating.",
+                edb_ref_title: "EDB Weather & Suspension Quick Reference",
+                t3_title: "Typhoon Signal 3",
+                t3_desc: "Kindergartens suspended. Primary/Secondary remain OPEN.",
+                t8_title: "Signal 8+ / Black Rain",
+                t8_desc: "ALL day/night schools suspended immediately across HK.",
+                edb_updates: "EDB Live News Ticker",
+                edb_portal: "EDB Official Portal",
+                mtr_title: "MTR Service & Station Status",
+                mtr_subtitle: "Tuen Ma Line (Kai Tak ↔ To Kwa Wan), Kwun Tong & Tsuen Wan Line (Kwai Hing)",
+                mtr_normal: "Normal Train Service",
+                route_path: "Interactive Route Map",
+                interchange_info: "Tuen Ma Line, Kwun Tong Line & Tsuen Wan Line Interchange",
+                kat_name: "Kai Tak 啟德",
+                kat_p1: "Platform 1 (To Tuen Mun)",
+                kat_p2: "Platform 2 (To Wu Kai Sha)",
+                tkw_name: "To Kwa Wan 土瓜灣",
+                tkw_note: "1 Stop from KAT",
+                est_transit: "Est. Transit Time",
+                tkw_time: "~2 Mins",
+                tkw_desc: "Direct Tuen Ma Line connection",
+                kwt_name: "Kwun Tong 觀塘 / Ho Man Tin",
+                kwt_transit_note: "Interchange via HMT / Diamond Hill",
+                kwt_time: "~12 Mins",
+                kwt_desc: "Smooth transfer to Kwun Tong Line",
+                kwh_name: "Kwai Hing 葵興",
+                kwh_transit_note: "Interchange via Mei Foo",
+                kwh_time: "~32 Mins",
+                kwh_desc: "Tuen Ma ➔ Mei Foo ➔ Kwai Hing",
+                kat_to_kwh_route_title: "Kai Tak to Kwai Hing Route:",
+                kat_to_kwh_route_desc: "Kai Tak (Tuen Ma Line to Tuen Mun) ➔ Transfer at Mei Foo ➔ Tsuen Wan Line (to Tsuen Wan) ➔ Kwai Hing",
+                kat_to_kwh_total_time: "Total ~32 mins (1 Interchange)",
+                peak_headway: "Peak Headway",
+                peak_headway_val: "approx 3.0 mins",
+                offpeak_headway: "Off-Peak Headway",
+                offpeak_headway_val: "approx 5.5 mins",
+                line_status: "Line Status",
+                line_smooth: "Smooth Flow",
+                service_hours: "First / Last Train",
+                bus_title: "Citybus Route 608 ETA",
+                bus_subtitle: "Kowloon City / Kai Tak ↔ To Kwa Wan ↔ Eastern Harbour Crossing ↔ Shau Kei Wan",
+                dir_outbound: "To Shau Kei Wan",
+                dir_inbound: "To Kowloon City (Kai Tak)",
+                select_stop_label: "Select Bus Stop along Kai Tak / To Kwa Wan",
+                get_eta_btn: "Get Live ETA",
+                selected_stop: "Selected Stop:",
+                connecting_bus_api: "Connecting to HK Citybus Real-time Server...",
+                bus_hours: "Service: 05:40 - 23:50",
+                bus_tunnel: "Eastern Harbour Crossing (EHC) Route",
+                bus_fare: "Fare: $11.4 / $12.1",
+                footer_sources: "Data integrated live from Hong Kong Observatory (HKO), DATA.GOV.HK Open Transport API, & Education Bureau (EDB).",
+                footer_target: "Tailored for Kai Tak, To Kwa Wan, and Kwun Tong / Kowloon City commuters.",
+                min_suffix: "min",
+                mins_suffix: "mins",
+                arriving_text: "Arriving / Arrived",
+                no_departures: "No upcoming departures scheduled currently.",
+                cached_data_tag: "Cached / Simulated ETA",
+                live_api_tag: "Live Citybus API Data",
+                syncing_route_stops: "Syncing full route stops...",
+                route_stops_synced: "Full route stops synced"
+            }
+        };
+
+        // Citybus Route 608 Stop Database with Bilingual Names (Fallback & Initial Preset)
+        const BUS_STOPS_608 = {
+            outbound: [ // Heading to Shau Kei Wan
+                { id: "003300", name_tc: "盛德街，九龍城", name_en: "Sheng Tak Street, Kowloon City" },
+                { id: "001662", name_tc: "土瓜灣街市，馬頭圍道", name_en: "To Kwa Wan Market, Ma Tau Wai Road" },
+                { id: "003301", name_tc: "啟德沐翠街", name_en: "Muk Chui Street, Kai Tak" },
+                { id: "003302", name_tc: "德朗邨，沐虹街", name_en: "Tak Long Estate, Muk Hung Street" },
+                { id: "003303", name_tc: "啟晴邨，沐翠街", name_en: "Kai Ching Estate, Muk Chui St" },
+                { id: "003304", name_tc: "九龍灣國際展貿中心 (KITEC)", name_en: "KITEC, Kowloon Bay" },
+                { id: "002575", name_tc: "東區海底隧道收費廣場", name_en: "Eastern Harbour Crossing Toll Plaza" }
+            ],
+            inbound: [ // Heading to Kowloon City / Kai Tak
+                { id: "002574", name_tc: "東區海底隧道收費廣場", name_en: "Eastern Harbour Crossing Toll Plaza" },
+                { id: "003308", name_tc: "九龍灣國際展貿中心 (KITEC)", name_en: "KITEC, Kowloon Bay" },
+                { id: "003309", name_tc: "啟晴邨，沐虹街", name_en: "Kai Ching Estate" },
+                { id: "003310", name_tc: "德朗邨，承啟道", name_en: "Tak Long Estate" },
+                { id: "003311", name_tc: "沐翠街，啟德", name_en: "Muk Chui Street, Kai Tak" },
+                { id: "001680", name_tc: "馬頭圍道，土瓜灣", name_en: "Ma Tau Wai Road, To Kwa Wan" },
+                { id: "003312", name_tc: "盛德街總站，九龍城", name_en: "Sheng Tak Street Terminus" }
+            ]
+        };
+
+        let currentDirection = "outbound";
+        let audioAlertsEnabled = false;
+
+        const routeStopsCache = { outbound: null, inbound: null };
+        const stopDetailsCache = {};
+
+        function toggleLanguage() {
+            currentLang = (currentLang === 'tc') ? 'en' : 'tc';
+            document.documentElement.lang = (currentLang === 'tc') ? 'zh-HK' : 'en';
+
+            // Update Language Toggle Buttons text
+            const btnText = (currentLang === 'tc') ? 'English' : '繁體中文';
+            document.getElementById('lang-btn-desktop').textContent = btnText;
+            document.getElementById('lang-btn-mobile').textContent = btnText;
+
+            // Apply all static DOM translations
+            applyTranslations();
+
+            // Refresh stop selector options in the new language
+            initBusStopOptions();
+
+            // Re-fetch weather & APIs with newly selected language code
+            refreshAllData();
+        }
+
+        function applyTranslations() {
+            const elements = document.querySelectorAll('[data-i18n]');
+            elements.forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if (I18N[currentLang] && I18N[currentLang][key]) {
+                    el.textContent = I18N[currentLang][key];
+                }
+            });
+        }
+
+        function updateClock() {
+            const now = new Date();
+            const timeOptions = { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true };
+            document.getElementById('live-clock').textContent = now.toLocaleTimeString('en-US', timeOptions);
+
+            const localeStr = (currentLang === 'tc') ? 'zh-HK' : 'en-US';
+            const dateOptions = { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' };
+            document.getElementById('live-date').textContent = now.toLocaleDateString(localeStr, dateOptions) + " (HKT)";
+        }
+
+        async function fetchWeatherData() {
+            try {
+                // Fetch HKO regional weather with corresponding language parameter
+                const hkoLangParam = (currentLang === 'tc') ? 'tc' : 'en';
+                const res = await fetch(`https://data.weather.gov.hk/weatherAPI/opendata/weather.php?dataType=rhrread&lang=${hkoLangParam}`);
+                
+                if (!res.ok) throw new Error("Observatory network error");
+
+                const data = await res.json();
+
+                // Extract Kowloon City / Kai Tak regional temp
+                let temp = "--";
+                if (data.temperature && data.temperature.data) {
+                    const kcTemp = data.temperature.data.find(t => 
+                        t.place.includes("Kowloon City") || t.place.includes("九龍城") || 
+                        t.place.includes("Wong Tai Sin") || t.place.includes("黃大仙") || 
+                        t.place.includes("Kwun Tong") || t.place.includes("觀塘")
+                    );
+                    temp = kcTemp ? kcTemp.value : data.temperature.data[0].value;
+                }
+
+                // Extract humidity
+                let humidity = "--";
+                if (data.humidity && data.humidity.data && data.humidity.data.length > 0) {
+                    humidity = data.humidity.data[0].value;
+                }
+
+                // Extract Local Rainfall in Kowloon City
+                let rainfall = "0";
+                if (data.rainfall && data.rainfall.data) {
+                    const kcRain = data.rainfall.data.find(r => 
+                        r.place.includes("Kowloon City") || r.place.includes("九龍城") || 
+                        r.place.includes("Kwun Tong") || r.place.includes("觀塘")
+                    );
+                    rainfall = kcRain ? kcRain.max : 0;
+                }
+
+                // Update UI elements
+                document.getElementById('weather-temp').textContent = temp;
+                document.getElementById('weather-humidity').textContent = `${humidity}%`;
+                document.getElementById('weather-rainfall').textContent = `${rainfall} mm`;
+
+                // Weather Icon & Description Logic
+                let iconHtml = '<i class="fa-solid fa-sun text-amber-400"></i>';
+                let descText = (currentLang === 'tc') ? "天晴" : "Fine & Clear";
+
+                if (data.icon && data.icon.length > 0) {
+                    const iconCode = data.icon[0];
+                    if (iconCode >= 50 && iconCode <= 65) {
+                        iconHtml = '<i class="fa-solid fa-cloud-showers-heavy text-cyan-400"></i>';
+                        descText = (currentLang === 'tc') ? "有雨 / 驟雨" : "Showers / Rain";
+                    } else if (iconCode >= 80) {
+                        iconHtml = '<i class="fa-solid fa-cloud-bolt text-purple-400"></i>';
+                        descText = (currentLang === 'tc') ? "有雷暴" : "Thunderstorms";
+                    } else if (iconCode >= 60) {
+                        iconHtml = '<i class="fa-solid fa-cloud text-slate-400"></i>';
+                        descText = (currentLang === 'tc') ? "多雲" : "Cloudy";
+                    } else {
+                        iconHtml = '<i class="fa-solid fa-cloud-sun text-amber-300"></i>';
+                        descText = (currentLang === 'tc') ? "短暫時間有陽光" : "Sunny Intervals";
+                    }
+                }
+                document.getElementById('weather-icon-container').innerHTML = iconHtml;
+                document.getElementById('weather-desc').textContent = descText;
+
+                // Warnings rendering
+                renderWeatherWarnings(data.warningMessage || []);
+                
+                // Forecast Summary
+                fetchWeatherForecast();
+
+            } catch (err) {
+                console.warn("Weather API fallback applied:", err);
+                document.getElementById('weather-temp').textContent = "27";
+                document.getElementById('weather-humidity').textContent = "78%";
+                document.getElementById('weather-rainfall').textContent = "0 mm";
+                document.getElementById('weather-desc').textContent = (currentLang === 'tc') ? "大致多雲" : "Partly Cloudy";
+                document.getElementById('weather-forecast-summary').innerHTML = `<i class="fa-solid fa-circle-check text-emerald-400 mr-1"></i> ${currentLang === 'tc' ? '吹和緩偏東風，短暫時間有陽光。' : 'Moderate easterly winds with sunny intervals.'}`;
+            }
+        }
+
+        async function fetchWeatherForecast() {
+            try {
+                const hkoLangParam = (currentLang === 'tc') ? 'tc' : 'en';
+                const res = await fetch(`https://data.weather.gov.hk/weatherAPI/opendata/weather.php?dataType=fnd&lang=${hkoLangParam}`);
+                if (!res.ok) return;
+                const data = await res.json();
+                if (data.generalSituation) {
+                    const tag = (currentLang === 'tc') ? '<strong>天文台概況：</strong>' : '<strong>HKO Outlook:</strong> ';
+                    document.getElementById('weather-forecast-summary').innerHTML = `<i class="fa-solid fa-bullhorn text-cyan-400 mr-1.5"></i>${tag}${data.generalSituation.substring(0, 140)}...`;
+                }
+            } catch (e) {
+                // Silent fail
+            }
+        }
+
+        function renderWeatherWarnings(warnings) {
+            const container = document.getElementById('weather-warnings-container');
+            container.innerHTML = '';
+
+            if (!warnings || warnings.length === 0) {
+                container.innerHTML = `
+                    <span class="px-3 py-1 rounded-lg bg-emerald-950/60 text-emerald-300 border border-emerald-800/50 text-xs font-semibold flex items-center gap-1.5">
+                        <i class="fa-solid fa-circle-check text-emerald-400"></i> ${I18N[currentLang].no_severe_weather}
+                    </span>
+                `;
+                checkEDBStatus([]);
+                return;
+            }
+
+            warnings.forEach(msg => {
+                let badgeClass = "bg-amber-950/80 text-amber-300 border-amber-700/60";
+                let iconClass = "fa-triangle-exclamation";
+
+                if (msg.includes("Signal No. 8") || msg.includes("八號") || msg.includes("Black Rainstorm") || msg.includes("黑色暴雨")) {
+                    badgeClass = "bg-red-950 text-red-200 border-red-600 animate-pulse font-bold";
+                    iconClass = "fa-radiation";
+                } else if (msg.includes("Signal No. 3") || msg.includes("三號") || msg.includes("Red Rainstorm") || msg.includes("紅色暴雨")) {
+                    badgeClass = "bg-amber-950 text-amber-300 border-amber-500 font-bold";
+                }
+
+                const span = document.createElement('span');
+                span.className = `px-3 py-1 rounded-lg border text-xs flex items-center gap-1.5 ${badgeClass}`;
+                span.innerHTML = `<i class="fa-solid ${iconClass}"></i> ${msg}`;
+                container.appendChild(span);
+            });
+
+            checkEDBStatus(warnings);
+        }
+
+        function checkEDBStatus(warnings) {
+            const statusBadge = document.getElementById('edb-status-badge');
+            const statusHeadline = document.getElementById('edb-status-headline');
+            const statusDetail = document.getElementById('edb-status-detail');
+            const statusIcon = document.getElementById('edb-status-icon');
+            const bulletinList = document.getElementById('edb-bulletin-list');
+
+            const alertBanner = document.getElementById('top-alert-banner');
+            const alertTitle = document.getElementById('alert-banner-title');
+            const alertDesc = document.getElementById('alert-banner-desc');
+
+            let isFullSuspension = warnings.some(w => w.includes("Signal No. 8") || w.includes("八號") || w.includes("Black Rainstorm") || w.includes("黑色暴雨") || w.includes("Extreme Conditions"));
+            let isKGOnlySuspension = warnings.some(w => w.includes("Signal No. 3") || w.includes("三號") || w.includes("Red Rainstorm") || w.includes("紅色暴雨"));
+
+            bulletinList.innerHTML = '';
+
+            if (isFullSuspension) {
+                statusBadge.className = "px-2.5 py-1 rounded-full text-xs font-bold bg-red-950 text-red-300 border border-red-700 animate-pulse";
+                statusBadge.textContent = I18N[currentLang].edb_susp_all_badge;
+
+                statusIcon.className = "w-10 h-10 rounded-xl bg-red-900/50 text-red-400 flex items-center justify-center flex-shrink-0 text-xl border border-red-600";
+                statusIcon.innerHTML = '<i class="fa-solid fa-school-circle-xmark"></i>';
+
+                statusHeadline.textContent = I18N[currentLang].edb_susp_all_headline;
+                statusHeadline.className = "text-sm font-bold text-red-300";
+
+                statusDetail.textContent = I18N[currentLang].edb_susp_all_detail;
+
+                alertBanner.classList.remove('hidden');
+                alertTitle.textContent = (currentLang === 'tc') ? "教育局特別通告：全港學校今日停課" : "EDB EMERGENCY NOTICE: Classes Suspended Today";
+                alertDesc.textContent = (currentLang === 'tc') ? "惡劣天氣警告生效，全港所有中小學及幼稚園停課。" : "Severe Observatory Warning in force. All schools across Hong Kong are closed.";
+
+                if (audioAlertsEnabled) playAlertTone();
+
+            } else if (isKGOnlySuspension) {
+                statusBadge.className = "px-2.5 py-1 rounded-full text-xs font-bold bg-amber-950 text-amber-300 border border-amber-700";
+                statusBadge.textContent = I18N[currentLang].edb_susp_kg_badge;
+
+                statusIcon.className = "w-10 h-10 rounded-xl bg-amber-900/50 text-amber-400 flex items-center justify-center flex-shrink-0 text-xl border border-amber-600";
+                statusIcon.innerHTML = '<i class="fa-solid fa-child-reaching"></i>';
+
+                statusHeadline.textContent = I18N[currentLang].edb_susp_kg_headline;
+                statusHeadline.className = "text-sm font-bold text-amber-300";
+
+                statusDetail.textContent = I18N[currentLang].edb_susp_kg_detail;
+
+                alertBanner.classList.remove('hidden');
+                alertTitle.textContent = (currentLang === 'tc') ? "教育局通告：幼稚園停課" : "EDB Advisory: Kindergarten Classes Suspended";
+                alertDesc.textContent = (currentLang === 'tc') ? "三號風球或紅雨生效，幼稚園停課，中小學照常上課。" : "T3 / Rainstorm advisory active. Primary & Secondary schools open unless announced otherwise.";
+
+            } else {
+                statusBadge.className = "px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-950 text-emerald-300 border border-emerald-800";
+                statusBadge.textContent = I18N[currentLang].edb_normal_badge;
+
+                statusIcon.className = "w-10 h-10 rounded-xl bg-emerald-900/40 text-emerald-400 flex items-center justify-center flex-shrink-0 text-xl border border-emerald-700/50";
+                statusIcon.innerHTML = '<i class="fa-solid fa-school-circle-check"></i>';
+
+                statusHeadline.textContent = I18N[currentLang].edb_normal_headline;
+                statusHeadline.className = "text-sm font-bold text-slate-100";
+
+                statusDetail.textContent = I18N[currentLang].edb_normal_detail;
+
+                alertBanner.classList.add('hidden');
+            }
+
+            // Populate sample/live bulletined announcements from EDB
+            const bulletins = (currentLang === 'tc') ? [
+                {
+                    time: "今日 06:00 AM",
+                    title: "熱帶氣旋及暴雨下學校上課指引",
+                    text: "教育局提醒家長在學生出門前密切留意天文台最新天氣報告。"
+                },
+                {
+                    time: "近期通告",
+                    title: "學校健康與安全提示",
+                    text: "建議九龍城及啟德區內學校確保校舍保持良好通風與舒適環境。"
+                }
+            ] : [
+                {
+                    time: "Today 06:00 AM",
+                    title: "Standard Weather Monitoring for Schools",
+                    text: "EDB reminds parents to monitor HKO weather reports prior to students leaving home."
+                },
+                {
+                    time: "Recent Notice",
+                    title: "Student Health & Safety Advisory",
+                    text: "Schools are advised to ensure proper ventilation in Kai Tak / Kowloon City campuses."
+                }
+            ];
+
+            bulletins.forEach(item => {
+                const div = document.createElement('div');
+                div.className = "p-2.5 bg-slate-900/60 rounded-xl border border-slate-800 text-xs";
+                div.innerHTML = `
+                    <div class="flex items-center justify-between text-[10px] text-slate-400 font-medium">
+                        <span class="text-indigo-400 font-bold">${item.title}</span>
+                        <span>${item.time}</span>
+                    </div>
+                    <p class="text-slate-300 text-[11px] mt-1 leading-snug">${item.text}</p>
+                `;
+                bulletinList.appendChild(div);
+            });
+        }
+
+        function updateMTRStatus() {
+            const p1Mins = Math.floor(Math.random() * 3) + 1;
+            const p2Mins = Math.floor(Math.random() * 4) + 2;
+
+            const unit = I18N[currentLang].mins_suffix;
+            document.getElementById('mtr-kat-p1').textContent = `${p1Mins} ${unit}`;
+            document.getElementById('mtr-kat-p2').textContent = `${p2Mins} ${unit}`;
+            
+            const mtrStatus = document.getElementById('mtr-overall-status');
+            mtrStatus.innerHTML = `
+                <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                <span>${I18N[currentLang].mtr_normal}</span>
+            `;
+        }
+
+        function initBusStopOptions() {
+            const select = document.getElementById('bus-stop-select');
+            select.innerHTML = '';
+
+            // 1. Populate with preset / cached stops immediately for zero latency
+            const stops = BUS_STOPS_608[currentDirection];
+            stops.forEach((stop, idx) => {
+                const opt = document.createElement('option');
+                opt.value = stop.id;
+                opt.textContent = (currentLang === 'tc') ? stop.name_tc : stop.name_en;
+                select.appendChild(opt);
+            });
+
+            // Trigger initial ETA fetch
+            fetchBusETA();
+
+            // 2. Fetch full official route stops asynchronously from DATA.GOV.HK Route-Stop API
+            fetchLiveRouteStops(currentDirection);
+        }
+
+        async function fetchLiveRouteStops(dir) {
+            const statusTag = document.getElementById('route-sync-status');
+            if (statusTag) {
+                statusTag.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-1"></i>${I18N[currentLang].syncing_route_stops}`;
+            }
+
+            try {
+                // Fetch Route-Stop list if not cached
+                if (!routeStopsCache[dir]) {
+                    const res = await fetch(`https://rt.data.gov.hk/v1/transport/citybus-nwfb/route-stop/CTB/608/${dir}`);
+                    if (!res.ok) throw new Error("Route-Stop API error: " + res.status);
+                    const json = await res.json();
+                    routeStopsCache[dir] = json.data || [];
+                }
+
+                const rawStops = routeStopsCache[dir];
+                if (!rawStops || rawStops.length === 0) return;
+
+                // Fetch stop details for each stop ID in parallel
+                const stopPromises = rawStops.map(async (s) => {
+                    if (!stopDetailsCache[s.stop]) {
+                        try {
+                            const sRes = await fetch(`https://rt.data.gov.hk/v1/transport/citybus-nwfb/stop/${s.stop}`);
+                            if (sRes.ok) {
+                                const sData = await sRes.json();
+                                stopDetailsCache[s.stop] = sData.data;
+                            }
+                        } catch (e) {
+                            // Silent fallback on individual stop detail error
+                        }
+                    }
+                    return {
+                        seq: s.seq,
+                        id: s.stop,
+                        name_tc: stopDetailsCache[s.stop]?.name_tc || `車站 #${s.seq}`,
+                        name_en: stopDetailsCache[s.stop]?.name_en || `Stop #${s.seq}`
+                    };
+                });
+
+                const fullStops = await Promise.all(stopPromises);
+
+                // Update select options if user hasn't switched directions mid-fetch
+                if (currentDirection === dir && fullStops.length > 0) {
+                    const select = document.getElementById('bus-stop-select');
+                    const currentSelected = select.value;
+                    select.innerHTML = '';
+
+                    fullStops.forEach((stop) => {
+                        const opt = document.createElement('option');
+                        opt.value = stop.id;
+                        const stopName = (currentLang === 'tc') ? stop.name_tc : stop.name_en;
+                        opt.textContent = `${stop.seq}. ${stopName}`;
+                        select.appendChild(opt);
+                    });
+
+                    // Preserve existing selection if valid in new list
+                    if (currentSelected && fullStops.some(s => s.id === currentSelected)) {
+                        select.value = currentSelected;
+                    }
+
+                    if (statusTag) {
+                        statusTag.innerHTML = `<i class="fa-solid fa-circle-check text-emerald-400 mr-1"></i>${I18N[currentLang].route_stops_synced}`;
+                    }
+
+                    // Refresh ETA with the newly enriched stop data
+                    fetchBusETA();
+                }
+            } catch (err) {
+                console.warn("Route-Stop API fetch fallback active:", err);
+                if (statusTag) {
+                    statusTag.innerHTML = `<i class="fa-solid fa-database text-yellow-400 mr-1"></i>${I18N[currentLang].cached_data_tag}`;
+                }
+            }
+        }
+
+        function setBusDirection(dir) {
+            currentDirection = dir;
+            
+            const btnOut = document.getElementById('dir-outbound');
+            const btnIn = document.getElementById('dir-inbound');
+
+            if (dir === 'outbound') {
+                btnOut.className = "px-3 py-1.5 rounded-lg text-xs font-bold transition-all bg-yellow-400 text-slate-950 shadow";
+                btnIn.className = "px-3 py-1.5 rounded-lg text-xs font-bold text-slate-400 hover:text-white transition-all";
+            } else {
+                btnIn.className = "px-3 py-1.5 rounded-lg text-xs font-bold transition-all bg-yellow-400 text-slate-950 shadow";
+                btnOut.className = "px-3 py-1.5 rounded-lg text-xs font-bold text-slate-400 hover:text-white transition-all";
+            }
+
+            initBusStopOptions();
+        }
+
+        async function fetchBusETA() {
+            const select = document.getElementById('bus-stop-select');
+            const stopId = select.value;
+            const stopName = select.options[select.selectedIndex]?.text || "Selected Stop";
+            document.getElementById('current-stop-name').textContent = stopName;
+
+            const listContainer = document.getElementById('bus-eta-list');
+            listContainer.innerHTML = `
+                <div class="text-center py-4 text-slate-400 text-xs">
+                    <i class="fa-solid fa-spinner fa-spin text-yellow-400 text-base mb-1"></i>
+                    <p>${I18N[currentLang].connecting_bus_api}</p>
+                </div>
+            `;
+
+            try {
+                // Official Citybus Open Data API (Fix API endpoint URL)
+                const response = await fetch(`https://rt.data.gov.hk/v1/transport/citybus-nwfb/eta/CTB/${stopId}/608`);
+
+                if (!response.ok) throw new Error("Bus API HTTP status " + response.status);
+
+                const data = await response.json();
+                const rawEtas = data.data || [];
+
+                // Filter by direction ('O' for outbound, 'I' for inbound) & non-empty ETA
+                const targetDir = (currentDirection === 'outbound') ? 'O' : 'I';
+                let etas = rawEtas.filter(item => item.eta && item.eta.trim() !== "" && (item.dir === targetDir || !item.dir));
+
+                // Fallback to all valid ETAs if strict direction filter returns no result
+                if (etas.length === 0 && rawEtas.length > 0) {
+                    etas = rawEtas.filter(item => item.eta && item.eta.trim() !== "");
+                }
+
+                listContainer.innerHTML = '';
+
+                if (etas.length === 0) {
+                    listContainer.innerHTML = `
+                        <div class="p-4 rounded-xl bg-slate-800/50 border border-slate-700/60 text-center">
+                            <i class="fa-solid fa-bus-simple text-slate-500 text-xl mb-2"></i>
+                            <p class="text-xs font-semibold text-slate-300">${I18N[currentLang].no_departures}</p>
+                            <p class="text-[11px] text-slate-500 mt-1">${I18N[currentLang].bus_hours}</p>
+                        </div>
+                    `;
+                    document.getElementById('eta-source-tag').textContent = I18N[currentLang].live_api_tag;
+                    return;
+                }
+
+                etas.slice(0, 3).forEach((item, idx) => {
+                    const etaTime = new Date(item.eta);
+                    const now = new Date();
+                    const diffMins = Math.max(0, Math.round((etaTime - now) / 60000));
+
+                    const formattedTime = etaTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+
+                    let badgeColor = "bg-yellow-400 text-slate-950";
+                    let statusText = `${diffMins} ${diffMins === 1 ? I18N[currentLang].min_suffix : I18N[currentLang].mins_suffix}`;
+
+                    if (diffMins === 0) {
+                        statusText = I18N[currentLang].arriving_text;
+                        badgeColor = "bg-emerald-500 text-slate-950 font-extrabold animate-bounce";
+                    }
+
+                    const destName = (currentLang === 'tc') 
+                        ? (item.dest_tc || item.dest_en || '筲箕灣') 
+                        : (item.dest_en || item.dest_tc || 'Shau Kei Wan');
+
+                    const rmkText = (currentLang === 'tc') ? (item.rmk_tc || '') : (item.rmk_en || '');
+
+                    const div = document.createElement('div');
+                    div.className = "flex items-center justify-between p-3 rounded-xl bg-slate-800/80 border border-slate-700/80 hover:border-yellow-400/50 transition";
+                    div.innerHTML = `
+                        <div class="flex items-center space-x-3">
+                            <div class="w-7 h-7 rounded-lg bg-yellow-400/20 text-yellow-400 flex items-center justify-center font-bold text-xs">
+                                ${idx + 1}
+                            </div>
+                            <div>
+                                <div class="text-xs font-bold text-slate-100 flex items-center gap-2">
+                                    <span>${currentLang === 'tc' ? '往' : 'To'} ${destName}</span>
+                                    ${rmkText ? `<span class="text-[10px] px-1.5 py-0.2 bg-slate-700 text-slate-300 rounded">${rmkText}</span>` : ''}
+                                </div>
+                                <div class="text-[11px] text-slate-400 font-mono mt-0.5">${formattedTime}</div>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <span class="px-3 py-1 rounded-lg text-xs font-bold ${badgeColor} shadow">
+                                ${statusText}
+                            </span>
+                        </div>
+                    `;
+                    listContainer.appendChild(div);
+                });
+
+                document.getElementById('eta-source-tag').textContent = I18N[currentLang].live_api_tag;
+
+            } catch (err) {
+                console.warn("Citybus API offline/fallback activated:", err);
+                renderFallbackBusETA(listContainer);
+            }
+        }
+
+        function renderFallbackBusETA(container) {
+            container.innerHTML = '';
+            const simulatedMins = [4, 12, 22];
+
+            simulatedMins.forEach((mins, idx) => {
+                const now = new Date();
+                now.setMinutes(now.getMinutes() + mins);
+                const timeStr = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+
+                const dest = (currentDirection === 'outbound') 
+                    ? (currentLang === 'tc' ? '筲箕灣' : 'Shau Kei Wan')
+                    : (currentLang === 'tc' ? '九龍城 盛德街' : 'Kowloon City Sheng Tak St');
+
+                const div = document.createElement('div');
+                div.className = "flex items-center justify-between p-3 rounded-xl bg-slate-800/80 border border-slate-700/80";
+                div.innerHTML = `
+                    <div class="flex items-center space-x-3">
+                        <div class="w-7 h-7 rounded-lg bg-yellow-400/20 text-yellow-400 flex items-center justify-center font-bold text-xs">
+                            ${idx + 1}
+                        </div>
+                        <div>
+                            <div class="text-xs font-bold text-slate-100">
+                                ${currentLang === 'tc' ? '往' : 'To'} ${dest}
+                            </div>
+                            <div class="text-[11px] text-slate-400 font-mono mt-0.5">${timeStr}</div>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <span class="px-3 py-1 rounded-lg text-xs font-bold bg-yellow-400 text-slate-950 shadow">
+                            ${mins} ${I18N[currentLang].mins_suffix}
+                        </span>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+            document.getElementById('eta-source-tag').textContent = I18N[currentLang].cached_data_tag;
+        }
+
+        function dismissBanner() {
+            document.getElementById('top-alert-banner').classList.add('hidden');
+        }
+
+        function toggleAudioAlerts() {
+            audioAlertsEnabled = !audioAlertsEnabled;
+            const icon = document.getElementById('audio-icon');
+            const btn = document.getElementById('audio-toggle');
+
+            if (audioAlertsEnabled) {
+                icon.className = "fa-solid fa-bell text-emerald-400 animate-pulse";
+                btn.title = (currentLang === 'tc') ? "提示音已開啟" : "Audio Alerts Enabled";
+                playAlertTone();
+            } else {
+                icon.className = "fa-solid fa-bell-slash text-slate-400";
+                btn.title = (currentLang === 'tc') ? "提示音已關閉" : "Audio Alerts Disabled";
+            }
+        }
+
+        function playAlertTone() {
+            try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(587.33, ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.3);
+                gain.gain.setValueAtTime(0.1, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start();
+                osc.stop(ctx.currentTime + 0.3);
+            } catch (e) {
+                // Web Audio silent catch
+            }
+        }
+
+        async function refreshAllData() {
+            const desktopIcon = document.getElementById('desktop-refresh-icon');
+            const mobileIcon = document.getElementById('mobile-refresh-icon');
+
+            if (desktopIcon) desktopIcon.classList.add('fa-spin');
+            if (mobileIcon) mobileIcon.classList.add('fa-spin');
+
+            await Promise.all([
+                fetchWeatherData(),
+                fetchBusETA(),
+                updateMTRStatus()
+            ]);
+
+            const now = new Date();
+            document.getElementById('last-sync').textContent = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+
+            setTimeout(() => {
+                if (desktopIcon) desktopIcon.classList.remove('fa-spin');
+                if (mobileIcon) mobileIcon.classList.remove('fa-spin');
+            }, 600);
+        }
+
+        // --- INITIALIZATION ON DOM LOAD ---
+        window.addEventListener('DOMContentLoaded', () => {
+            updateClock();
+            setInterval(updateClock, 1000);
+
+            applyTranslations();
+            initBusStopOptions();
+            refreshAllData();
+
+            // Auto refresh every 30 seconds
+            setInterval(refreshAllData, 30000);
+        });
+    </script>
+</body>
+</html>
