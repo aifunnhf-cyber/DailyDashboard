@@ -301,7 +301,7 @@
                             </div>
                         </div>
                         <span id="news-page-indicator" class="text-xs font-mono px-2 py-1 rounded bg-slate-800 text-blue-400 border border-slate-700">
-                            1 - 10
+                            1 - 5
                         </span>
                     </div>
 
@@ -911,12 +911,7 @@
                 { title: "Tech Innovation Summit: AI advancements lead discussion", summary: "Keynote speakers highlight next generation algorithms and infrastructure.", date: "Today" },
                 { title: "International Sports Highlights: World Championship preparations underway", summary: "Athletes assemble for preliminary qualifying rounds standard events.", date: "Today" },
                 { title: "Global Climate Conference: New sustainability targets introduced", summary: "Delegates finalize landmark agreements on carbon reduction milestones.", date: "Today" },
-                { title: "Aviation & Logistics Update: Global transport routes expand", summary: "Major airlines announce new direct long-haul international destinations.", date: "Today" },
-                { title: "Global Energy Forum: Clean power investments reach new milestone", summary: "Renewable energy adoption scales rapidly in developing regions.", date: "Today" },
-                { title: "Space Exploration: Next-gen satellite constellation deployed", summary: "Rocket launches successfully put advanced weather tracking satellites into orbit.", date: "Today" },
-                { title: "Automotive Tech: EV charging infrastructure expands across highways", summary: "Fast-charging network coverage increases by 40% year-over-year.", date: "Today" },
-                { title: "Global Trade Summit: New cross-border digital economy agreements signed", summary: "Policy makers standardize rules for international e-commerce and data flow.", date: "Today" },
-                { title: "Urban Development Report: Smart cities adopt automated transit models", summary: "Public transport networks pilot autonomous shuttles in major metropolitan zones.", date: "Today" }
+                { title: "Aviation & Logistics Update: Global transport routes expand", summary: "Major airlines announce new direct long-haul international destinations.", date: "Today" }               
             ];
 
             fallbackNews.forEach((item, index) => {
@@ -1485,8 +1480,7 @@
             await Promise.all([
                 fetchWeatherData(),
                 fetchBusETA(),
-                updateMTRStatus(),
-                fetchWorldNews()
+                updateMTRStatus()
             ]);
 
             const now = new Date();
