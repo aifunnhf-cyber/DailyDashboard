@@ -290,39 +290,7 @@
                     </div>
                 </section>
 
-                <!-- WORLD NEWS API CARD (ADDED AT THE BOTTOM OF LEFT COLUMN) -->
-                <section class="glass-panel rounded-2xl p-5 shadow-2xl relative overflow-hidden border-t-2 border-t-blue-500">
-                    <div class="flex items-center justify-between pb-4 border-b border-slate-800">
-                        <div class="flex items-center space-x-2.5">
-                            <i class="fa-solid fa-globe text-blue-400 text-lg"></i>
-                            <div>
-                                <h2 class="text-base font-bold text-white tracking-wide" data-i18n="news_title">世界熱門新聞 (US Top News)</h2>
-                                <p class="text-[11px] text-slate-400" data-i18n="news_subtitle">World News API 實時發佈</p>
-                            </div>
-                        </div>
-                        <span id="news-page-indicator" class="text-xs font-mono px-2 py-1 rounded bg-slate-800 text-blue-400 border border-slate-700">
-                            1 - 5
-                        </span>
-                    </div>
-
-                    <!-- News List Container -->
-                    <div id="world-news-list" class="mt-4 space-y-3 min-h-[300px]">
-                        <div class="text-center py-8 text-slate-500 text-xs">
-                            <i class="fa-solid fa-spinner fa-spin text-lg text-blue-400 mb-2"></i>
-                            <p>載入世界新聞數據中...</p>
-                        </div>
-                    </div>
-
-                    <!-- Pagination Controls -->
-                    <div class="mt-4 pt-3 border-t border-slate-800 flex items-center justify-between gap-2">
-                        <span class="text-[11px] text-slate-400" id="news-total-count">顯示前 5 則</span>
-                        <button id="next-news-btn" onclick="nextNewsPage()" class="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-xs font-semibold transition flex items-center gap-1.5 shadow-md">
-                            <span>載入下 5 條</span>
-                            <i class="fa-solid fa-arrow-right text-[10px]"></i>
-                        </button>
-                    </div>
-                </section>
-
+               
             </div>
 
 
@@ -536,6 +504,18 @@
                         </span>
                     </div>
                 </section> 
+
+                 <!-- HK01 news --!>
+                <section class="glass-panel rounded-2xl p-5 shadow-2xl border-t-2 border-t-purple-500 relative overflow-hidden">
+                    <!-- Give the parent div a defined height (e.g., h-[800px] or h-screen) -->
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-800 h-[600px] w-full">
+                        <iframe 
+                            src="https://www.hk01.com/" 
+                            class="w-full h-full border-0 rounded-lg"
+                            title="HK01 NEWS">
+                        </iframe>
+                    </div>
+                </section>
                 
                 <!-- KAI TAK SPORTS PARK (KTSP) EVENTS --!>
                 <section class="glass-panel rounded-2xl p-5 shadow-2xl border-t-2 border-t-purple-500 relative overflow-hidden">
@@ -812,128 +792,7 @@
             const dateOptions = { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' };
             document.getElementById('live-date').textContent = now.toLocaleDateString(localeStr, dateOptions) + " (HKT)";
         }
-
-        // --- WORLD NEWS API FUNCTIONS ---
-        async function fetchWorldNews() {
-            const newsListContainer = document.getElementById('world-news-list');
-            
-            try {
-                // Endpoint provided by user: GET https://worldnewsapi.com/top-news?source-country=us&language=en&api-key=YOUR_KEY
-                const response = await fetch(`https://api.worldnewsapi.com/top-news?source-country=us&language=en&api-key=${WORLD_NEWS_API_KEY}`);
-                
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-
-                const data = await response.json();
-                
-                // Unpack news from top-news structure or standard articles list
-                if (data.top_news && data.top_news.length > 0) {
-                    globalNewsData = [];
-                    data.top_news.forEach(cluster => {
-                        if (cluster.news && cluster.news.length > 0) {
-                            globalNewsData.push(...cluster.news);
-                        }
-                    });
-                } else if (data.news) {
-                    globalNewsData = data.news;
-                } else {
-                    globalNewsData = [];
-                }
-
-                currentNewsIndex = 0;
-                renderNewsPage();
-
-            } catch (err) {
-                console.warn("World News API Fetch Error, loading fallback dataset:", err);
-                renderFallbackNews();
-            }
-        }
-
-        function renderNewsPage() {
-            const newsListContainer = document.getElementById('world-news-list');
-            newsListContainer.innerHTML = '';
-
-            if (globalNewsData.length === 0) {
-                renderFallbackNews();
-                return;
-            }
-
-            const currentBatch = globalNewsData.slice(currentNewsIndex, currentNewsIndex + NEWS_PER_PAGE);
-
-            currentBatch.forEach((item, index) => {
-                const articleDiv = document.createElement('div');
-                articleDiv.className = "p-3 bg-slate-900/60 rounded-xl border border-slate-800 hover:border-blue-500/50 transition flex space-x-3";
-                
-                const imgHtml = item.image 
-                    ? `<img src="${item.image}" alt="News Image" class="w-16 h-16 object-cover rounded-lg flex-shrink-0 bg-slate-800" onerror="this.style.display='none'">` 
-                    : '';
-
-                articleDiv.innerHTML = `
-                    ${imgHtml}
-                    <div class="flex-1 min-w-0">
-                        <div class="flex items-center justify-between gap-2">
-                            <span class="text-[10px] text-blue-400 font-bold font-mono">#${currentNewsIndex + index + 1}</span>
-                            <span class="text-[10px] text-slate-500 truncate">${item.publish_date || 'Recent'}</span>
-                        </div>
-                        <h4 class="text-xs font-bold text-slate-100 hover:text-blue-300 line-clamp-2 mt-0.5">
-                            <a href="${item.url || '#'}" target="_blank" rel="noopener">${item.title}</a>
-                        </h4>
-                        <p class="text-[11px] text-slate-400 line-clamp-1 mt-1">${item.text || item.summary || ''}</p>
-                    </div>
-                `;
-                newsListContainer.appendChild(articleDiv);
-            });
-
-            // Update Page Indicators
-            const startNum = currentNewsIndex + 1;
-            const endNum = Math.min(currentNewsIndex + NEWS_PER_PAGE, globalNewsData.length);
-            document.getElementById('news-page-indicator').textContent = `${startNum} - ${endNum}`;
-            document.getElementById('news-total-count').textContent = `共 ${globalNewsData.length} 條頭條新聞`;
-        }
-
-        function nextNewsPage() {
-            if (globalNewsData.length === 0) return;
-
-            currentNewsIndex += NEWS_PER_PAGE;
-            if (currentNewsIndex >= globalNewsData.length) {
-                currentNewsIndex = 0; // Loop back to start
-            }
-            renderNewsPage();
-        }
-
-        function renderFallbackNews() {
-            const newsListContainer = document.getElementById('world-news-list');
-            newsListContainer.innerHTML = '';
-
-            const fallbackNews = [
-                { title: "Global Markets Update: Economic indicators show steady growth", summary: "Financial analysts review latest quarterly summaries across key tech sectors.", date: "Today" },
-                { title: "Tech Innovation Summit: AI advancements lead discussion", summary: "Keynote speakers highlight next generation algorithms and infrastructure.", date: "Today" },
-                { title: "International Sports Highlights: World Championship preparations underway", summary: "Athletes assemble for preliminary qualifying rounds standard events.", date: "Today" },
-                { title: "Global Climate Conference: New sustainability targets introduced", summary: "Delegates finalize landmark agreements on carbon reduction milestones.", date: "Today" },
-                { title: "Aviation & Logistics Update: Global transport routes expand", summary: "Major airlines announce new direct long-haul international destinations.", date: "Today" }               
-            ];
-
-            fallbackNews.forEach((item, index) => {
-                const articleDiv = document.createElement('div');
-                articleDiv.className = "p-3 bg-slate-900/60 rounded-xl border border-slate-800 flex space-x-3";
-                articleDiv.innerHTML = `
-                    <div class="flex-1 min-w-0">
-                        <div class="flex items-center justify-between gap-2">
-                            <span class="text-[10px] text-blue-400 font-bold font-mono">#${index + 1}</span>
-                            <span class="text-[10px] text-slate-500">${item.date}</span>
-                        </div>
-                        <h4 class="text-xs font-bold text-slate-100 line-clamp-2 mt-0.5">${item.title}</h4>
-                        <p class="text-[11px] text-slate-400 line-clamp-1 mt-1">${item.summary}</p>
-                    </div>
-                `;
-                newsListContainer.appendChild(articleDiv);
-            });
-
-            document.getElementById('news-page-indicator').textContent = "1 - 5";
-            document.getElementById('news-total-count').textContent = "示範新聞數據庫";
-        }
-
+       
         async function fetchWeatherData() {
             try {
                 // Fetch HKO regional weather with corresponding language parameter
