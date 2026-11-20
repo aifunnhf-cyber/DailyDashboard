@@ -7,7 +7,7 @@ import xml.etree.ElementTree as ET
 
 NTFY_TOPIC = os.environ.get("NTFY_TOPIC", "ivan-hk-brief-9821")
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
-BUS_STOP_ID = os.environ.get("BUS_STOP_ID", "003302")  # e.g. Tak Long Estate, Muk Hung Street[cite: 1]
+BUS_STOP_ID = os.environ.get("BUS_STOP_ID", "003706")  # e.g. Tak Long Estate, Muk Hung Street[cite: 1]
 
 
 def fetch_json(url: str) -> dict:
@@ -41,7 +41,7 @@ def gather_hk_data() -> str:
 
     # 2. Citybus Route 608 ETA[cite: 1]
     try:
-        eta_json = fetch_json(f"https://rt.data.gov.hk/v1/transport/citybus-nwfb/eta/CTB/{BUS_STOP_ID}/608")
+        eta_json = fetch_json(f"https://rt.data.gov.hk/v2/transport/citybus/eta/CTB/{BUS_STOP_ID}/608")
         etas = [x.get("eta", "")[11:16] for x in eta_json.get("data", []) if x.get("eta")][:3]
         parts.append(f"城巴608 (站 {BUS_STOP_ID}) 未來班次: {', '.join(etas) if etas else '暫無班次'}")
     except Exception as e:
