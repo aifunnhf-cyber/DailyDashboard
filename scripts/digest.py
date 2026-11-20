@@ -73,19 +73,26 @@ def summarize_with_gemini(raw_text: str) -> str:
     if not GEMINI_API_KEY:
         return raw_text[:500]
 
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={urllib.parse.quote(GEMINI_API_KEY)}"
-    payload = {"contents": [{"parts": [{"text": prompt}]}]}
-    req = urllib.request.Request(
-        url,
-        data=json.dumps(payload).encode("utf-8"),
-        headers={"Content-Type": "application/json"},
-        method="POST",
-    )
-    with urllib.request.urlopen(req, timeout=20) as resp:
-        res = json.loads(resp.read().decode("utf-8"))
-        candidates = res.get("candidates", [])
-        text = candidates[0]["content"]["parts"][0]["text"].strip() if candidates else ""
-        return text or raw_text[:500]
+    for model in ["gemini-3.8-flash", "gemini-3.5-flash-lite"]:
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={urllib.parse.quote(GEMINI_API_KEY)}"
+        payload = {"contents": [{"parts": [{"text": prompt}]}]}
+        req = urllib.request.Request(
+            url,
+            data=json.dumps(payload).encode("utf-8"),
+            headers={"Content-Type": "application/json"},
+            method="POST",
+        )
+        try:
+            with urllib.request.urlopen(req, timeout=20) as resp:
+                res = json.loads(resp.read().decode("utf-8"))
+                candidates = res.get("candidates", [])
+                text = candidates[0]["content"]["parts"][0]["text"].strip() if candidates else ""
+                if text:
+                    return text
+        except Exception as e:
+            print(f"Gemini ({model}) fallback triggered: {e}")
+
+    return raw_text[:500]
 
 
 def send_ntfy(message: str) -> None:
