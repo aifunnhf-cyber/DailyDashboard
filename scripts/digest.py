@@ -1,4 +1,3 @@
-
 import json
 import os
 import urllib.parse
@@ -7,7 +6,19 @@ import xml.etree.ElementTree as ET
 
 NTFY_TOPIC = os.environ.get("NTFY_TOPIC", "ivan-hk-brief-9821")
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
-BUS_STOP_ID = os.environ.get("BUS_STOP_ID", "003706")  # e.g. Tak Long Estate, Muk Hung Street[cite: 1]
+BUS_STOP_ID = os.environ.get("BUS_STOP_ID", "003706")  # e.g. Tak Long Estate, Muk Hung Street[cite: 2]
+
+# Representative (line, sta, chinese_name) to check line-level status/delays
+MTR_CHECK_POINTS = [
+    ("ISL", "NOP", "港島綫"),
+    ("KTL", "KOT", "觀塘綫"),
+    ("TKL", "TIK", "將軍澳綫"),
+    ("TWL", "CEN", "荃灣綫"),
+    ("EAL", "ADM", "東鐵綫"),
+    ("TML", "HUH", "屯馬綫"),
+    ("TCL", "HOK", "東涌綫"),
+    ("SIL", "ADM", "南港島綫"),
+]
 
 
 def fetch_json(url: str) -> dict:
@@ -22,10 +33,40 @@ def fetch_text(url: str) -> str:
         return resp.read().decode("utf-8", errors="replace")
 
 
+def gather_mtr_faults() -> list[str]:
+    """Return fault/delay strings only when an MTR line reports an alert or delay."""
+    faults = []
+    seen = set()
+
+    for line, sta, line_name in MTR_CHECK_POINTS:
+        try:
+            url = f"https://rt.data.gov.hk/v1/transport/mtr/getSchedule.php?line={line}&sta={sta}&lang=tc"
+            data = fetch_json(url)
+            status = str(data.get("status", "1"))
+            alert_msg = (data.get("message") or "").strip()
+            alert_url = (data.get("url") or "").strip()
+
+            line_data = (data.get("data") or {}).get(f"{line}-{sta}", {})
+            is_delay = str(line_data.get("isdelay", "N")).upper() == "Y"
+
+            if status == "0" or is_delay or alert_msg:
+                detail = alert_msg or ("列車延誤" if is_delay else "服務異常")
+                if alert_url:
+                    detail = f"{detail} ({alert_url})"
+                entry = f"{line_name} ({line}): {detail}"
+                if entry not in seen:
+                    seen.add(entry)
+                    faults.append(entry)
+        except Exception as e:
+            print(f"MTR check failed for {line}-{sta}: {e}")
+
+    return faults
+
+
 def gather_hk_data() -> str:
     parts = []
 
-    # 1. HKO regional weather & active warnings[cite: 1]
+    # 1. HKO regional weather & active warnings[cite: 2]
     try:
         w = fetch_json("https://data.weather.gov.hk/weatherAPI/opendata/weather.php?dataType=rhrread&lang=tc")
         temps = w.get("temperature", {}).get("data", [])
@@ -39,7 +80,7 @@ def gather_hk_data() -> str:
     except Exception as e:
         parts.append(f"天氣讀取失敗: {e}")
 
-    # 2. Citybus Route 608 ETA[cite: 1]
+    # 2. Citybus Route 608 ETA[cite: 2]
     try:
         eta_json = fetch_json(f"https://rt.data.gov.hk/v2/transport/citybus/eta/CTB/{BUS_STOP_ID}/608")
         etas = [x.get("eta", "")[11:16] for x in eta_json.get("data", []) if x.get("eta")][:3]
@@ -74,6 +115,11 @@ def gather_hk_data() -> str:
     except Exception as e:
         parts.append(f"交通消息讀取失敗: {e}")
 
+    # 4. MTR fault/delay info ONLY when an issue exists (skip if normal)
+    mtr_faults = gather_mtr_faults()
+    if mtr_faults:
+        parts.append("港鐵故障/延誤:\n- " + "\n- ".join(mtr_faults))
+
     return "\n".join(parts)
 
 
@@ -81,7 +127,8 @@ def summarize_with_gemini(raw_text: str) -> str:
     prompt = (
         "你是香港通勤簡報助手。請根據以下實時資料，用繁體中文寫出極簡短匯報（最多 5 點，每點一句，總字數 200 字內）："
         "1. 必須最優先列出任何涉及【電照街、港運城、北角、英皇道】的爆水管、水管維修或封路消息；"
-        "2. 其次列出天氣警告、停課或城巴608班次異常；若上述地區及交通均無異常，請簡潔寫出即可。\n\n"
+        "2. 若資料中有『港鐵故障/延誤』，請列出受影響路綫及狀況；若資料中沒有『港鐵故障/延誤』，完全不要提及港鐵或地鐵；"
+        "3. 其次列出天氣警告、停課或城巴608班次異常；若上述地區及交通均無異常，請簡潔寫出即可。\n\n"
         + raw_text
     )
 
