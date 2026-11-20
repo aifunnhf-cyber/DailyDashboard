@@ -1,1 +1,29 @@
+name: HK Commute & Weather Brief
 
+on:
+  # Allows you to click a button to test it manually anytime
+  workflow_dispatch:
+
+  # Runs automatically on weekdays (Mon-Fri)
+  # Note: GitHub uses UTC time (HKT = UTC + 8)
+  schedule:
+    - cron: '30 23 * * 0-4'  # 07:30 AM HKT (Mon-Fri)
+    - cron: '15 0 * * 1-5'   # 08:15 AM HKT (Mon-Fri)
+
+jobs:
+  send-brief:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Run brief script
+        env:
+          GEMINI_API_KEY: ${{ secrets.DAILYDASHBOARD_NTFY_GEMINI_API_KEY }}
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+        run: python3 scripts/digest.py
