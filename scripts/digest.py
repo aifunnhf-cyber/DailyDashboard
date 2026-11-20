@@ -7,7 +7,7 @@ import xml.etree.ElementTree as ET
 
 NTFY_TOPIC = os.environ.get("NTFY_TOPIC", "ivan-hk-brief-9821")
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
-BUS_STOP_ID = os.environ.get("BUS_STOP_ID", "003301")  # e.g. Muk Chui Street, Kai Tak[cite: 1]
+BUS_STOP_ID = os.environ.get("BUS_STOP_ID", "003302")  # e.g. Tak Long Estate, Muk Hung Street[cite: 1]
 
 
 def fetch_json(url: str) -> dict:
@@ -47,16 +47,30 @@ def gather_hk_data() -> str:
     except Exception as e:
         parts.append(f"城巴608讀取失敗: {e}")
 
-    # 3. Transport Dept special traffic news XML[cite: 2]
+    # 3. Transport Dept special traffic news XML (Scan ALL & prioritize North Point / water main burst)
     try:
         xml_raw = fetch_text("https://resource.data.one.gov.hk/td/en/specialtrafficnews.xml")
         root = ET.fromstring(xml_raw)
-        msgs = []
-        for m in root.findall(".//message")[:12]:
+        target_keywords = ["電照街", "港運", "丹拿道", "英皇道", "北角", "渣華道", "七姊妹道", "爆水管", "水管爆裂", "水管緊急維修"]
+        priority_msgs = []
+        general_msgs = []
+
+        for m in root.findall(".//message"):
             txt = (m.findtext("ChinText") or m.findtext("EngText") or "").strip()
-            if txt:
-                msgs.append(txt.split("。")[0])
-        parts.append("特別交通消息:\n- " + "\n- ".join(msgs[:6]) if msgs else "特別交通消息: 暫無")
+            if not txt:
+                continue
+            short_txt = txt.split("。")[0]
+            if any(k in txt for k in target_keywords):
+                priority_msgs.append(f"【重點關注】{short_txt}")
+            elif len(general_msgs) < 6:
+                general_msgs.append(short_txt)
+
+        combined_msgs = priority_msgs + general_msgs
+        parts.append(
+            "特別交通消息:\n- " + "\n- ".join(combined_msgs)
+            if combined_msgs
+            else "特別交通消息: 暫無"
+        )
     except Exception as e:
         parts.append(f"交通消息讀取失敗: {e}")
 
@@ -65,15 +79,16 @@ def gather_hk_data() -> str:
 
 def summarize_with_gemini(raw_text: str) -> str:
     prompt = (
-        "你是香港通勤簡報助手。請根據以下實時資料，用繁體中文寫出極簡短匯報（最多 5 點，每點一句，總字數 180 字內）："
-        "重點列出天氣警告、停課/交通異常或重要班次；若無異常就簡潔寫出。\n\n"
+        "你是香港通勤簡報助手。請根據以下實時資料，用繁體中文寫出極簡短匯報（最多 5 點，每點一句，總字數 200 字內）："
+        "1. 必須最優先列出任何涉及【電照街、港運城、北角、英皇道】的爆水管、水管維修或封路消息；"
+        "2. 其次列出天氣警告、停課或城巴608班次異常；若上述地區及交通均無異常，請簡潔寫出即可。\n\n"
         + raw_text
     )
 
     if not GEMINI_API_KEY:
         return raw_text[:500]
 
-    for model in ["gemini-3.8-flash", "gemini-3.5-flash-lite"]:
+    for model in ["gemini-3.5-flash-lite", "gemini-3.8-flash"]:
         url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={urllib.parse.quote(GEMINI_API_KEY)}"
         payload = {"contents": [{"parts": [{"text": prompt}]}]}
         req = urllib.request.Request(
