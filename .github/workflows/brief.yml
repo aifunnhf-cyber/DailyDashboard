@@ -7,8 +7,7 @@ on:
   # Runs automatically on weekdays (Mon-Fri)
   # Note: GitHub uses UTC time (HKT = UTC + 8)
   schedule:
-    - cron: '30 23 * * 0-6' # 07:30 AM HKT (Mon-Fri)
-  # - cron: '05 0 * * 1-5'   # 08:05 AM HKT (Mon-Fri)
+    - cron: '23 23 * * 0-6'  # 07:23 AM HKT (Mon-Sun)  
 
 jobs:
   send-brief:
